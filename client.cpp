@@ -5,6 +5,9 @@
 #include <string>
 #include <thread>
 #include <zmqpp/zmqpp.hpp>
+#include <mutex>
+#include <condition_variable>
+#include "safequeue.h"
 
 using namespace std;
 using namespace zmqpp;
@@ -21,12 +24,12 @@ void messageToFile(const message &msg, const string &fileName) {
   ofs.write((char *)data, size);
 }
 
-void songplay(Music *musicptr, queue<string> *qsongsptr, socket &s, bool &stop) {
+void songplay(Music *musicptr, SafeQueue<string> *qsongsptr, socket &s, bool &stop) {
   cout << "Inicia songplay" << endl;
 	while (!stop) {
-    while (qsongsptr->empty()) {}
-    string songtoplay = qsongsptr->front();
-    qsongsptr->pop();
+    //while (qsongsptr->empty()) {}
+    string songtoplay = qsongsptr->dequeue();
+    //qsongsptr->pop();
     cout << "va a sonar:" << songtoplay << endl;
     message m;
 		m << "play" << songtoplay;
@@ -53,8 +56,9 @@ int main(int argc, char **argv) {
   cout << "Connecting to tcp port 5555\n";
   s.connect("tcp://localhost:5555");
 
-  std::queue<string> qsongs; // esta cola almacenara el nombre de las acciones
+  //std::queue<string> qsongs; // esta cola almacenara el nombre de las acciones
                              // que el usuario agrega
+  SafeQueue<string> qsongs;
   Music music;
 	bool stop = false;
   thread t(songplay, &music, &qsongs, std::ref(s), std::ref(stop));
@@ -72,9 +76,9 @@ int main(int argc, char **argv) {
       cout << "Selecciono (play) digite el nombre de la cancione" << endl;
       string file;
       cin >> file;
-      qsongs.push(file);
-      cout << "lo que tengo para play es:" << qsongs.front() << endl;
-      cout << "despues de t.join" << endl;
+      qsongs.enqueue(file);
+      //cout << "lo que tengo para play es:" << qsongs.front() << endl;
+      //cout << "despues de t.join" << endl;
     } else if (operation == "list") {
       m << operation;
       s.send(m);
@@ -92,8 +96,8 @@ int main(int argc, char **argv) {
       cout << "Selecciono (add) digite el nombre de la cancione" << endl;
       string file;
       cin >> file;
-      qsongs.push(file);
-      cout << "lo que tengo para add es:" << qsongs.front() << endl;
+      qsongs.enqueue(file);
+      //cout << "lo que tengo para add es:" << qsongs.front() << endl;
     } else if (operation == "exit") {
 			stop = true;
       t.join();
