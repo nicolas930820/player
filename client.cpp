@@ -43,6 +43,21 @@ void songplay(Music *musicptr, SafeQueue<string> *qsongsptr, socket &s, bool &st
   }
   return;
 }
+
+  void equeue(SafeQueue<string> *qsongseptr, string value){
+    SafeQueue<string> auxqueue;
+    string songtoerase;
+    while(!qsongseptr->qempty()){
+      songtoerase = qsongseptr->dequeue();
+      if (songtoerase != value){
+        auxqueue.enqueue(songtoerase);
+      }
+    }
+    while(!auxqueue.qempty()){
+      songtoerase = auxqueue.dequeue();
+      qsongseptr->enqueue(songtoerase);
+    }
+  }
 /*
 void thread_function(songplay,){ //le paso el objeto music y le paso la cola
         while (music.getStatus() == SoundSource::Playing){
@@ -96,8 +111,22 @@ int main(int argc, char **argv) {
       cout << "Selecciono (add) digite el nombre de la cancione" << endl;
       string file;
       cin >> file;
+      cout << "si funciona" << qsongs.qempty() << endl;
       qsongs.enqueue(file);
+      cout << "si funciona2" << qsongs.qempty() << endl;
+      /*
+      int size;
+      size = qsongs.sizequeue(qsongs);
+      cout << "el tamaño de qsongs es" << size << endl;
+      */
       //cout << "lo que tengo para add es:" << qsongs.front() << endl;
+    }else if(operation == "del"){
+      string element;
+      cout << "digite el nombre de la cancion que desea borrar: " << endl;
+      cin >> element;
+      equeue(&qsongs, element);
+      cout << "La cancion se elimino correctamente" << endl;
+
     } else if (operation == "exit") {
 			stop = true;
       t.join();

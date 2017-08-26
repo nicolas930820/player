@@ -29,7 +29,14 @@ public:
     q.push(t);
     c.notify_one();
   }
-
+// prueba de funcion tamaño
+/*
+  T sizequeue(std::queue<T> p){
+    std::lock_guard<std::mutex> lock(m);
+    T val = p.size();
+    return val;
+  }
+*/
   // Get the "front"-element.
   // If the queue is empty, wait till a element is avaiable.
   T dequeue(void)
@@ -43,6 +50,13 @@ public:
     T val = q.front();
     q.pop();
     return val;
+  }
+
+  bool qempty(void){
+    if(!q.empty()){
+      return false;
+    }
+    return true;
   }
 
 private:
