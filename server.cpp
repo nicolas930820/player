@@ -4,6 +4,7 @@
 #include <cassert>
 #include <unordered_map>
 #include <fstream>
+#include <glob.h>
 
 //export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:usr/local/lib
 
@@ -27,16 +28,65 @@ void fileToMesage(const string& fileName, message& msg) {
 	msg.add_raw(bytes.data(), bytes.size());
 }
 
+// Split all available songs
+vector<string> split(string s, char del){
+    vector<string> v;
+    string nameSong = "";
+
+    for (int i = 0; i < int(s.size()); i++) {
+        if (s[i] != del)
+            nameSong += s[i];
+
+        else{
+            v.push_back(nameSong);
+            nameSong = "";
+        }
+    }
+
+    if (nameSong != "")
+        v.push_back(nameSong);
+
+    return v;
+}
+
+// Load all files from directory
+unordered_map<string,string> fromDirectory(const string& path){
+    glob_t glob_result;
+    glob(path.c_str(), GLOB_TILDE, NULL, &glob_result);
+
+    vector<string> files;
+
+    for (unsigned int i = 0; i < glob_result.gl_pathc; ++i)
+        files.push_back(string(glob_result.gl_pathv[i]));
+
+    globfree(&glob_result);
+    unordered_map<string,string> Result;
+
+    for (int i = 0; i < int(files.size()); i++){
+        vector<string> vec = split(files[i], '.');
+
+        if (vec[1] == "ogg"){
+            vec = split(vec[0], '/');
+            Result[vec[1]] = files[i];
+        }
+    }
+
+    return Result;
+}
+
 int main(int argc, char** argv) {
   context ctx;
   socket s(ctx, socket_type::rep);
   s.bind("tcp://*:5555");
 
-  string path(argv[1]);
-  unordered_map<string,string> songs;
-  songs["s1"] = path + "s1.ogg";
-  songs["s2"] = path + "s2.ogg";
-  songs["s3"] = path + "s3.ogg";
+  // string path(argv[1]);
+  // unordered_map<string,string> songs;
+  // songs["s1"] = path + "s1.ogg";
+  // songs["s2"] = path + "s2.ogg";
+  // songs["s3"] = path + "s3.ogg";
+	string path(argv[1]);
+	unordered_map<string,string> songs;
+	songs = fromDirectory(path + "*");
 
   cout << "Start serving requests!\n";
   while(true) {

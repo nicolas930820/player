@@ -25,7 +25,7 @@ void messageToFile(const message &msg, const string &fileName) {
 }
 
 void songplay(Music *musicptr, SafeQueue<string> *qsongsptr, socket &s, bool &stop) {
-  cout << "Inicia songplay" << endl;
+  //cout <<endl<< "Inicia hilo songplay" << endl;
 	while (!stop) {
     //while (qsongsptr->empty()) {}
     string songtoplay = qsongsptr->dequeue();
@@ -64,7 +64,7 @@ void thread_function(songplay,){ //le paso el objeto music y le paso la cola
                 cout << "suena!" << endl;*/
 
 int main(int argc, char **argv) {
-  cout << "This is the client\n";
+  cout << "\nThis is the client\n";
 
   context ctx;
   socket s(ctx, socket_type::req);
@@ -79,8 +79,8 @@ int main(int argc, char **argv) {
   thread t(songplay, &music, &qsongs, std::ref(s), std::ref(stop));
 
   while (true) {
-
-    cout << "operacion?" << endl;
+    cout <<endl<<"Operations available:"<<endl<<"list"<<endl<<"add"<<endl<<"play"<<endl<<"del"<<endl<<"stop o exit"<<endl;
+    cout <<endl<<"Operacion?: ";
     string operation;
     cin >> operation;
 
@@ -88,32 +88,37 @@ int main(int argc, char **argv) {
     // m << operation;
 
     if (operation == "play") {
-      cout << "Selecciono (play) digite el nombre de la cancione" << endl;
+      cout <<endl<< "Selecciono (play) digite el nombre de la cancion:";
       string file;
       cin >> file;
       qsongs.enqueue(file);
       //cout << "lo que tengo para play es:" << qsongs.front() << endl;
       //cout << "despues de t.join" << endl;
     } else if (operation == "list") {
+      cout <<endl<< "Selecciono (list)" << endl;
+      cout <<endl<< "Canciones del directorio (music): " <<endl<<endl;
       m << operation;
       s.send(m);
       message answer;
       s.receive(answer);
+
       size_t numSongs;
+      string songL;
+
       answer >> numSongs;
       cout << "Available songs: " << numSongs << endl;
       for (int i = 0; i < numSongs; i++) {
-        string s;
-        answer >> s;
-        cout << s << endl;
+        answer >> songL;
+        cout << "Name song "<<(i+1)<<": "<< songL << endl;
+
       }
     } else if (operation == "add") {
-      cout << "Selecciono (add) digite el nombre de la cancione" << endl;
+      cout <<endl<< "Selecciono (add) digite el nombre de la cancion: ";
       string file;
       cin >> file;
-      cout << "si funciona" << qsongs.qempty() << endl;
+      //cout << "si funciona" << qsongs.qempty() << endl;
       qsongs.enqueue(file);
-      cout << "si funciona2" << qsongs.qempty() << endl;
+      //cout << "si funciona2" << qsongs.qempty() << endl;
       /*
       int size;
       size = qsongs.sizequeue(qsongs);
@@ -121,16 +126,18 @@ int main(int argc, char **argv) {
       */
       //cout << "lo que tengo para add es:" << qsongs.front() << endl;
     }else if(operation == "del"){
+      cout <<endl<< "Selecciono (del) digite el nombre de la cancion que desea borrar:";
       string element;
-      cout << "digite el nombre de la cancion que desea borrar: " << endl;
       cin >> element;
       equeue(&qsongs, element);
-      cout << "La cancion se elimino correctamente" << endl;
+      cout <<endl<< "La cancion se elimino correctamente" << endl;
 
-    } else if (operation == "exit") {
+    } else if (operation == "stop") {
 			stop = true;
       t.join();
       return 0;
+    }else if (operation == "exit") {
+      break;
     } else {
       cout << "Don't know what to do!!!" << endl;
     }
