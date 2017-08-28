@@ -24,8 +24,8 @@ void messageToFile(const message &msg, const string &fileName) {
   ofs.write((char *)data, size);
 }
 
-void songplay(Music *musicptr, SafeQueue<string> *qsongsptr, socket &s, bool &stop) {
-  //cout <<endl<< "Inicia hilo songplay" << endl;
+void songplay(Music *musicptr, SafeQueue<string> *qsongsptr, socket &s, bool &stop, bool &pause) {
+  cout <<endl<< "Inicia hilo songplay" << endl;
 	while (!stop) {
     //while (qsongsptr->empty()) {}
     string songtoplay = qsongsptr->dequeue();
@@ -39,7 +39,7 @@ void songplay(Music *musicptr, SafeQueue<string> *qsongsptr, socket &s, bool &st
     messageToFile(answer, "song.ogg");
     musicptr->openFromFile("song.ogg");
     musicptr->play();
-    while (musicptr->getStatus() == SoundSource::Status::Playing && !stop) {}
+    while (musicptr->getStatus() == SoundSource::Status::Playing && !stop && !pause) {}
   }
   return;
 }
@@ -76,10 +76,11 @@ int main(int argc, char **argv) {
   SafeQueue<string> qsongs;
   Music music;
 	bool stop = false;
-  thread t(songplay, &music, &qsongs, std::ref(s), std::ref(stop));
+  bool pause = false;
+  thread t(songplay, &music, &qsongs, std::ref(s), std::ref(stop), std::ref(pause));
 
   while (true) {
-    cout <<endl<<"Operations available:"<<endl<<"list"<<endl<<"add"<<endl<<"play"<<endl<<"del"<<endl<<"stop o exit"<<endl;
+    cout <<endl<<"Operations available:"<<endl<<"list"<<endl<<"add"<<endl<<"play"<<endl<<"next"<<endl<<"stop"<<endl<<"del"<<endl<<"exit"<<endl;
     cout <<endl<<"Operacion?: ";
     string operation;
     cin >> operation;
@@ -136,6 +137,8 @@ int main(int argc, char **argv) {
 			stop = true;
       t.join();
       return 0;
+    }else if(operation == "next"){
+      pause = true;
     }else if (operation == "exit") {
       break;
     } else {
