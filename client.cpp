@@ -15,13 +15,20 @@ using namespace sf;
 
 // template <class T, class Container = deque<T> >class queue;
 
-void messageToFile(const message &msg, const string &fileName) {
+void messageToFile(const message &msg, const string &fileName, bool newFile) {
   const void *data;
   msg.get(&data, 1);
   size_t size = msg.size(1);
-
+  if (newFile) {
+      ofstream ofs(fileName, ios::binary);
+      ofs.write((char *)data, size);
+  }else{
+  // ofstream ofs(fileName, ios::binary | ios::ate | ios::app);
+  // ofs.seekp(0,ios::end);
+  // }
   ofstream ofs(fileName, ios::binary | ios::app);
   ofs.write((char *)data, size);
+  }
 }
 
 void songplay(Music *musicptr, SafeQueue<string> *qsongsptr, socket &s, bool &stop, bool &pause, int part) {
@@ -35,31 +42,40 @@ void songplay(Music *musicptr, SafeQueue<string> *qsongsptr, socket &s, bool &st
 		m << "init" << songtoplay;
     s.send(m);
     message answer;
-    cout << "ya mande el mensaje" << endl;
+    cout << "ya mande el mensaje de partes" << endl<< endl;
     s.receive(answer);
-    cout << "ya recivi el mensaje" << endl;
+    //cout << "ya recivi el mensaje" << endl;
     int numberpart;
     answer >> numberpart;
     //int nnumberpart = stoi(numberpart);
     cout << "el numero de partas son:" << numberpart << endl;
     while(part <= numberpart){
-      cout << "voy a reproducir la parte:" << part << endl;
+      cout << "voy a reproducir las partes:" << part << endl<< endl;
       message m2;
       m2 << "play" << songtoplay << part;
       s.send(m2);
-      part = part +1;
-      cout << "la siguiente parte es: " << part << endl;
       message answer2;
-      cout << "le voy a mandar el siguiente mensaje" << endl;
+      cout << "le voy a mandar el siguiente mensaje (play,songtoplay,part)" << endl<<endl;
       s.receive(answer2);
       cout << "recibi la parte" << endl;
-      messageToFile(answer2, "song.ogg");
-      cout << "mande la parte a messagetofile" << endl;
+      if (part==1) {
+        messageToFile(answer2, "song.ogg", true);
+        cout << "newFile recibi la parte igual 1--" << part << endl;;
+      }else{
+      //messageToFile(answer2, "song"+to_string(part)+".ogg", false);
+      messageToFile(answer2, "song.ogg", false);
+      cout << "openFile mande la parte siguiente" << endl<< endl;
+      cout << "recibi la parte" << part<< endl;
+      }
+      part++;
     }
       musicptr->openFromFile("song.ogg");
-      cout << "voy a reproducir las parte" << endl;
+      cout << "las partes cargadas" << (part-1) << endl<< endl;
+      cout << "todas las partes= " << numberpart<< endl;
+      cout << "voy a reproducir las partes" << endl;
       musicptr->play();
       while (musicptr->getStatus() == SoundSource::Status::Playing && !stop && !pause) {}
+      part=1;
   }
   return;
 }

@@ -12,40 +12,47 @@
 using namespace std;
 using namespace zmqpp;
 
-int nparts( string fileName){
-	int cut=512*1024;
+int nparts(string fileName){
+	int cut=512*1000;
+	//524288
 	ifstream ifs(fileName, ios::binary | ios::ate);
 	ifstream::pos_type pos = ifs.tellg();
-	int npart = ceil((double)pos / cut);
-	if((pos%cut) != 0){
-		npart++;
-	}
+	int end= ifs.tellg();
+	int npart = ceil(end / cut);
+	if((pos%cut)!=0){npart++;}
 	return npart;
 }
 
 vector<char> readFileToBytes(const string& fileName, int part) {
 	ifstream ifs(fileName, ios::binary | ios::ate);
 	ifstream::pos_type endpos = ifs.tellg();
-
-	int cut=512*1024;
-	vector<char> result(cut);
+	int end = ifs.tellg();
+	int cut=512*1000;
 	int numpart = nparts(fileName);
 	int prueba = cut * (part-1);
 
 	//ifs.seekg(0, ios::beg);
-	if (part==1) {
+	if (endpos<cut) {
 		ifs.seekg(0, ios::beg);
-		ifs.read(result.data(),cut);
+		vector<char> result(endpos);
+		ifs.read(result.data(),result.size());
+		return result;
+	}else if (part==1&&(cut>endpos)) {
+		ifs.seekg(0, ios::beg);
+		vector<char> result(cut);
+		ifs.read(result.data(),result.size());
+		return result;
 	}else if (part == numpart) {
+		vector<char> result(end-prueba);
 		ifs.seekg(prueba);
-		ifs.read(result.data(),( ((double)endpos)-prueba));
-
+		ifs.read(result.data(), result.size() );
+		return result;
 	} else{
+		vector<char> result(cut);
 		ifs.seekg(prueba);
-		ifs.read(result.data(),cut);
+		ifs.read(result.data(),result.size());
+		return result;
 	}
-	return result;
-
 }
 
 
