@@ -5,26 +5,53 @@
 #include <unordered_map>
 #include <fstream>
 #include <glob.h>
+#include <math.h>
 
 //export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:usr/local/lib
 
 using namespace std;
 using namespace zmqpp;
 
-vector<char> readFileToBytes(const string& fileName) {
+int nparts( string fileName){
+	int cut=512*1024;
 	ifstream ifs(fileName, ios::binary | ios::ate);
 	ifstream::pos_type pos = ifs.tellg();
-
-	vector<char> result(pos);
-
-	ifs.seekg(0, ios::beg);
-	ifs.read(result.data(), pos);
-
-	return result;
+	int npart = ceil((double)pos / cut);
+	if((pos%cut) != 0){
+		npart++;
+	}
+	return npart;
 }
 
-void fileToMesage(const string& fileName, message& msg) {
-	vector<char> bytes = readFileToBytes(fileName);
+vector<char> readFileToBytes(const string& fileName, int part) {
+	ifstream ifs(fileName, ios::binary | ios::ate);
+	ifstream::pos_type endpos = ifs.tellg();
+
+	int cut=512*1024;
+	vector<char> result(cut);
+	int numpart = nparts(fileName);
+	int prueba = cut * (part-1);
+
+	//ifs.seekg(0, ios::beg);
+	if (part==1) {
+		ifs.seekg(0, ios::beg);
+		ifs.read(result.data(),cut);
+	}else if (part == numpart) {
+		ifs.seekg(prueba);
+		ifs.read(result.data(),( ((double)endpos)-prueba));
+
+	} else{
+		ifs.seekg(prueba);
+		ifs.read(result.data(),cut);
+	}
+	return result;
+
+}
+
+
+
+void fileToMesage(const string& fileName, message& msg, int part) {
+	vector<char> bytes = readFileToBytes(fileName, part);
 	msg.add_raw(bytes.data(), bytes.size());
 }
 
@@ -103,15 +130,26 @@ int main(int argc, char** argv) {
       for(const auto& p : songs)
         n << p.first;
       s.send(n);
-    } else if(op == "play") {
+    } else if(op == "init"){
+			string songName;
+			int parts;
+			m >> songName;
+			message n_init;
+			parts = nparts(songs[songName]);
+			cout << "el numero de partes es:" << parts << endl;
+			n_init << parts;
+			s.send(n_init);
+		}else if(op == "play") {
       // Use case 2: Send song file
       string songName;
+			int clientpart;
       m >> songName;
+			m >> clientpart;
       cout << "sending song " << songName
            << " at " << songs[songName] << endl;
 			message n;
 			n << "file";
-			fileToMesage(songs[songName], n);
+			fileToMesage(songs[songName], n, clientpart);
 			s.send(n);
     } else {
       cout << "Invalid operation requested!!\n";

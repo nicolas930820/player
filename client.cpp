@@ -20,11 +20,11 @@ void messageToFile(const message &msg, const string &fileName) {
   msg.get(&data, 1);
   size_t size = msg.size(1);
 
-  ofstream ofs(fileName, ios::binary);
+  ofstream ofs(fileName, ios::binary | ios::app);
   ofs.write((char *)data, size);
 }
 
-void songplay(Music *musicptr, SafeQueue<string> *qsongsptr, socket &s, bool &stop, bool &pause) {
+void songplay(Music *musicptr, SafeQueue<string> *qsongsptr, socket &s, bool &stop, bool &pause, int part) {
   cout <<endl<< "Inicia hilo songplay" << endl;
 	while (!stop) {
     //while (qsongsptr->empty()) {}
@@ -32,14 +32,34 @@ void songplay(Music *musicptr, SafeQueue<string> *qsongsptr, socket &s, bool &st
     //qsongsptr->pop();
     cout << "va a sonar:" << songtoplay << endl;
     message m;
-		m << "play" << songtoplay;
+		m << "init" << songtoplay;
     s.send(m);
     message answer;
+    cout << "ya mande el mensaje" << endl;
     s.receive(answer);
-    messageToFile(answer, "song.ogg");
-    musicptr->openFromFile("song.ogg");
-    musicptr->play();
-    while (musicptr->getStatus() == SoundSource::Status::Playing && !stop && !pause) {}
+    cout << "ya recivi el mensaje" << endl;
+    int numberpart;
+    answer >> numberpart;
+    //int nnumberpart = stoi(numberpart);
+    cout << "el numero de partas son:" << numberpart << endl;
+    while(part <= numberpart){
+      cout << "voy a reproducir la parte:" << part << endl;
+      message m2;
+      m2 << "play" << songtoplay << part;
+      s.send(m2);
+      part = part +1;
+      cout << "la siguiente parte es: " << part << endl;
+      message answer2;
+      cout << "le voy a mandar el siguiente mensaje" << endl;
+      s.receive(answer2);
+      cout << "recibi la parte" << endl;
+      messageToFile(answer2, "song.ogg");
+      cout << "mande la parte a messagetofile" << endl;
+    }
+      musicptr->openFromFile("song.ogg");
+      cout << "voy a reproducir las parte" << endl;
+      musicptr->play();
+      while (musicptr->getStatus() == SoundSource::Status::Playing && !stop && !pause) {}
   }
   return;
 }
@@ -77,7 +97,8 @@ int main(int argc, char **argv) {
   Music music;
 	bool stop = false;
   bool pause = false;
-  thread t(songplay, &music, &qsongs, std::ref(s), std::ref(stop), std::ref(pause));
+  int serverpart = 1;
+  thread t(songplay, &music, &qsongs, std::ref(s), std::ref(stop), std::ref(pause), serverpart);
 
   while (true) {
     cout <<endl<<"Operations available:"<<endl<<"list"<<endl<<"add"<<endl<<"play"<<endl<<"next"<<endl<<"stop"<<endl<<"del"<<endl<<"exit"<<endl;
